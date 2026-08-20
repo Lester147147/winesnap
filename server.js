@@ -4,9 +4,9 @@ import OpenAI from "openai";
 
 const app = express();
 const port = process.env.PORT || 3000;
-const defaultModel = "gpt-5.4-mini";
+const defaultModel = "gpt-5-mini";
 const configuredModel = process.env.OPENAI_MODEL?.trim();
-const model = configuredModel && configuredModel !== "OPENAI_MODEL" ? configuredModel : defaultModel;
+const model = configuredModel && !["OPENAI_MODEL", "gpt-5.4-mini"].includes(configuredModel) ? configuredModel : defaultModel;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
@@ -55,7 +55,7 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
           }
         }
       },
-      max_output_tokens: 1400
+      max_output_tokens: 3000
     });
     let response;
     try {
