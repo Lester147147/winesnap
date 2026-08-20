@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#351526"><meta name="description" content="Photograph a wine bottle and get a useful instant guide.">
-  <link rel="manifest" href="/manifest.webmanifest?v=5"><link rel="icon" href="/icon.svg"><link rel="apple-touch-icon" href="/icon.svg"><link rel="stylesheet" href="/styles.css?v=5">
+  <link rel="manifest" href="/manifest.webmanifest?v=6"><link rel="icon" href="/icon.svg"><link rel="apple-touch-icon" href="/icon.svg"><link rel="stylesheet" href="/styles.css?v=6">
   <title>WineSnap</title>
 </head>
 <body>
@@ -12,16 +12,16 @@
   <main>
     <section class="hero">
       <p class="eyebrow">YOUR POCKET WINE GUIDE</p>
-      <h2>Know every<br>wine you drink.</h2>
-      <p>Photograph the label for an instant, researched guide.</p>
+      <h2>Snap it.<br>Know the wine.</h2>
+      <p>Point your camera at the label for ratings, reviews and a complete wine guide.</p>
     </section>
     <form id="scanForm">
       <label class="camera" for="photo">
         <img id="preview" alt="Selected wine bottle preview" hidden>
-        <span id="cameraPrompt"><span class="camera-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4.5 10.4 3h3.2L15 4.5h3A3 3 0 0 1 21 7.5v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h3Zm3 3.25A4.75 4.75 0 1 0 12 17.25 4.75 4.75 0 0 0 12 7.75Zm0 2A2.75 2.75 0 1 1 12 15.25 2.75 2.75 0 0 1 12 9.75Z"/></svg></span><b>Take a wine photo</b><small>or choose one from your phone</small></span>
+        <span id="cameraPrompt"><span class="camera-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 4.5 10.4 3h3.2L15 4.5h3A3 3 0 0 1 21 7.5v9a3 3 0 0 1-3 3H6a3 3 0 0 1-3-3v-9a3 3 0 0 1 3-3h3Zm3 3.25A4.75 4.75 0 1 0 12 17.25 4.75 4.75 0 0 0 12 7.75Zm0 2A2.75 2.75 0 1 1 12 15.25 2.75 2.75 0 0 1 12 9.75Z"/></svg></span><b>Snap a wine bottle</b><small>Tap to open your camera</small></span>
       </label>
       <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" capture="environment" required>
-      <button id="scanButton" type="submit">Identify this wine</button>
+      <button id="scanButton" type="submit">Show me this wine</button>
     </form>
     <section class="benefits" aria-label="WineSnap features"><div><strong>01</strong><span>Identify</span></div><div><strong>02</strong><span>Ratings</span></div><div><strong>03</strong><span>Reviews</span></div></section>
     <button class="my-wines-button" id="myWinesButton" type="button" hidden>My saved wines</button>
@@ -33,6 +33,6 @@
   <dialog id="authDialog"><button class="dialog-close" id="dialogClose" aria-label="Close">×</button><h2>Welcome to WineSnap</h2><p>Enter your email and we’ll send you a secure sign-in link. No password needed.</p><form id="authForm"><label for="email">Email address</label><input class="email-input" id="email" type="email" autocomplete="email" required><button type="submit">Email my sign-in link</button></form><p id="authStatus" role="status"></p></dialog>
   <footer>Wine details are guidance; check the bottle for definitive information.</footer>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="/app.js?v=5" type="module"></script>
+  <script src="/app.js?v=6" type="module"></script>
 </body>
 </html>
