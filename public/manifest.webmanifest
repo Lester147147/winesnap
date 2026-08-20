@@ -1,1 +1,14 @@
-{"name":"WineSnap","short_name":"WineSnap","start_url":"/","display":"standalone","background_color":"#fbf7f1","theme_color":"#351526","description":"Photograph a bottle and get an instant wine guide."}
+{
+  "id": "/",
+  "name": "WineSnap",
+  "short_name": "WineSnap",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#fbf7f1",
+  "theme_color": "#351526",
+  "description": "Photograph a bottle and get an instant wine guide.",
+  "icons": [
+    {"src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}
