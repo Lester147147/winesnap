@@ -1,5 +1,5 @@
-const CACHE='winesnap-v5';
-const ASSETS=['/','/styles.css?v=5','/app.js?v=5','/manifest.webmanifest?v=5','/winesnap-hero.webp'];
+const CACHE='winesnap-v6';
+const ASSETS=['/','/styles.css?v=6','/app.js?v=6','/manifest.webmanifest?v=6','/winesnap-hero.webp'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
