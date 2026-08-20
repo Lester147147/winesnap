@@ -15,10 +15,30 @@ const upload = multer({
 
 app.use(express.static("public", { extensions: ["html"] }));
 app.get("/health", (_req, res) => res.json({ ok: true }));
+app.get("/api/config", (_req, res) => res.json({
+  supabase: process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY ? {
+    url: process.env.SUPABASE_URL,
+    anonKey: process.env.SUPABASE_ANON_KEY
+  } : null
+}));
+
+const getUser = async req => {
+  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null;
+  const authorization = req.headers.authorization;
+  if (!authorization?.startsWith("Bearer ")) return null;
+  const response = await fetch(`${process.env.SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: process.env.SUPABASE_ANON_KEY, authorization }
+  });
+  return response.ok ? response.json() : null;
+};
 
 app.post("/api/identify", upload.single("photo"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "Please choose a clear JPG, PNG or WebP bottle photo." });
   if (!process.env.OPENAI_API_KEY) return res.status(503).json({ error: "WineSnap is not connected to its AI service yet." });
+
+  const accountsEnabled = process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY;
+  const user = accountsEnabled ? await getUser(req) : null;
+  if (accountsEnabled && !user) return res.status(401).json({ error: "Please sign in by email before scanning a wine." });
 
   try {
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -143,6 +163,18 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
       result.reviews = [];
       result.sources = [];
       result.research_caveat = "Live reviews and ratings were temporarily unavailable.";
+    }
+    if (user) {
+      fetch(`${process.env.SUPABASE_URL}/rest/v1/scan_events`, {
+        method: "POST",
+        headers: {
+          apikey: process.env.SUPABASE_ANON_KEY,
+          authorization: req.headers.authorization,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal"
+        },
+        body: JSON.stringify({ user_id: user.id, wine_name: [result.producer, result.name, result.vintage].filter(Boolean).join(" ") })
+      }).catch(error => console.error("Scan tracking failed", error?.message));
     }
     res.json(result);
   } catch (error) {
