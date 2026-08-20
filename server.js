@@ -71,14 +71,13 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
 
     try {
       const wineQuery = [result.producer, result.name, result.vintage, result.region, result.country].filter(Boolean).join(" ");
-      const research = await client.responses.create({
-        model: "gpt-5-mini",
-        tools: [{ type: "web_search", search_context_size: "medium" }],
-        tool_choice: "required",
-        input: `Research this exact wine: ${wineQuery}. Find current, verifiable information from the producer, reputable wine merchants, professional critics and established wine communities. Do not transfer a rating from a different cuvee or vintage. For an NV wine, NV ratings are acceptable. Include only ratings and reviews that have a direct source URL. Summarise rather than quote reviews. Use null or empty arrays when a fact cannot be verified. Prices should be typical current UK bottle prices, not case prices.`,
-        text: {
-          format: {
-            type: "json_schema",
+      const research = await client.chat.completions.create({
+        model: "gpt-5-search-api",
+        web_search_options: { search_context_size: "medium" },
+        messages: [{ role: "user", content: `Research this exact wine: ${wineQuery}. Find current, verifiable information from the producer, reputable wine merchants, professional critics and established wine communities. Do not transfer a rating from a different cuvee or vintage. For an NV wine, NV ratings are acceptable. Include only ratings and reviews that have a direct source URL. Summarise rather than quote reviews. Use null or empty arrays when a fact cannot be verified. Prices should be typical current UK bottle prices, not case prices. Return only the requested JSON.` }],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
             name: "wine_research",
             strict: true,
             schema: {
@@ -122,10 +121,11 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
             }
           }
         },
-        max_output_tokens: 5000
-      });
-      if (research.output_text) {
-        const verified = JSON.parse(research.output_text);
+        max_completion_tokens: 3500
+      }, { timeout: 45000 });
+      const researchText = research.choices?.[0]?.message?.content;
+      if (researchText) {
+        const verified = JSON.parse(researchText);
         for (const key of ["grapes", "tasting_notes", "food_pairings"]) {
           if (verified[key]?.length) result[key] = verified[key];
         }
