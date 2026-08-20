@@ -23,8 +23,8 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
   try {
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-    const response = await client.responses.create({
-      model,
+    const identifyWithModel = selectedModel => client.responses.create({
+      model: selectedModel,
       input: [{
         role: "user",
         content: [
@@ -57,6 +57,15 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
       },
       max_output_tokens: 1400
     });
+    let response;
+    try {
+      response = await identifyWithModel(model);
+    } catch (error) {
+      const modelUnavailable = error?.status === 404 || error?.code === "model_not_found";
+      if (!modelUnavailable || model === "gpt-5-mini") throw error;
+      console.warn(`Model ${model} is unavailable; retrying with gpt-5-mini.`);
+      response = await identifyWithModel("gpt-5-mini");
+    }
     if (!response.output_text) throw new Error("OpenAI returned no wine identification text.");
     const result = JSON.parse(response.output_text);
     res.json(result);
