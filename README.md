@@ -15,3 +15,12 @@ Mobile-first wine identification web app. Photograph a bottle label to receive a
 ## Render
 
 Click **Deploy to Render** above. The included `render.yaml` defines the service. Add `OPENAI_API_KEY` as a secret environment variable when prompted. Do not commit the key.
+
+## Accounts and saved wines
+
+1. Create a Supabase project.
+2. In its SQL Editor, run `supabase/schema.sql` once.
+3. In Authentication > URL Configuration, set the Site URL to `https://winesnap.onrender.com` and add `https://winesnap.onrender.com/**` as a redirect URL.
+4. In Render, add `SUPABASE_URL` and `SUPABASE_ANON_KEY` from the Supabase project API settings, then redeploy.
+
+The anon key is designed for public clients; database access is protected by the row-level security policies in the schema. Never add the Supabase service-role key to the browser or repository.
