@@ -68,6 +68,82 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
     }
     if (!response.output_text) throw new Error("OpenAI returned no wine identification text.");
     const result = JSON.parse(response.output_text);
+
+    try {
+      const wineQuery = [result.producer, result.name, result.vintage, result.region, result.country].filter(Boolean).join(" ");
+      const research = await client.responses.create({
+        model: "gpt-5-mini",
+        tools: [{ type: "web_search", search_context_size: "medium" }],
+        tool_choice: "required",
+        input: `Research this exact wine: ${wineQuery}. Find current, verifiable information from the producer, reputable wine merchants, professional critics and established wine communities. Do not transfer a rating from a different cuvee or vintage. For an NV wine, NV ratings are acceptable. Include only ratings and reviews that have a direct source URL. Summarise rather than quote reviews. Use null or empty arrays when a fact cannot be verified. Prices should be typical current UK bottle prices, not case prices.`,
+        text: {
+          format: {
+            type: "json_schema",
+            name: "wine_research",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                grapes: { type: "array", items: { type: "string" } },
+                alcohol: { type: ["string", "null"] },
+                tasting_notes: { type: "array", items: { type: "string" } },
+                food_pairings: { type: "array", items: { type: "string" } },
+                serving_temperature: { type: ["string", "null"] },
+                drinking_window: { type: ["string", "null"] },
+                typical_price_gbp: { type: ["string", "null"] },
+                rating_summary: { type: ["string", "null"] },
+                ratings: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { source: { type: "string" }, rating: { type: "string" }, url: { type: "string" } },
+                    required: ["source", "rating", "url"], additionalProperties: false
+                  }
+                },
+                reviews: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { source: { type: "string" }, summary: { type: "string" }, url: { type: "string" } },
+                    required: ["source", "summary", "url"], additionalProperties: false
+                  }
+                },
+                sources: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: { title: { type: "string" }, url: { type: "string" } },
+                    required: ["title", "url"], additionalProperties: false
+                  }
+                }
+              },
+              required: ["grapes", "alcohol", "tasting_notes", "food_pairings", "serving_temperature", "drinking_window", "typical_price_gbp", "rating_summary", "ratings", "reviews", "sources"],
+              additionalProperties: false
+            }
+          }
+        },
+        max_output_tokens: 5000
+      });
+      if (research.output_text) {
+        const verified = JSON.parse(research.output_text);
+        for (const key of ["grapes", "tasting_notes", "food_pairings"]) {
+          if (verified[key]?.length) result[key] = verified[key];
+        }
+        for (const key of ["alcohol", "serving_temperature", "drinking_window", "typical_price_gbp"]) {
+          if (verified[key]) result[key] = verified[key];
+        }
+        result.critic_rating_summary = verified.rating_summary;
+        result.ratings = verified.ratings;
+        result.reviews = verified.reviews;
+        result.sources = verified.sources;
+      }
+    } catch (researchError) {
+      console.error("Wine research failed", { status: researchError?.status, code: researchError?.code, message: researchError?.message });
+      result.ratings = [];
+      result.reviews = [];
+      result.sources = [];
+      result.research_caveat = "Live reviews and ratings were temporarily unavailable.";
+    }
     res.json(result);
   } catch (error) {
     console.error("Wine identification failed", { model, status: error?.status, code: error?.code, message: error?.message });
