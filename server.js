@@ -4,6 +4,9 @@ import OpenAI from "openai";
 
 const app = express();
 const port = process.env.PORT || 3000;
+const defaultModel = "gpt-5.4-mini";
+const configuredModel = process.env.OPENAI_MODEL?.trim();
+const model = configuredModel && configuredModel !== "OPENAI_MODEL" ? configuredModel : defaultModel;
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 8 * 1024 * 1024 },
@@ -21,21 +24,46 @@ app.post("/api/identify", upload.single("photo"), async (req, res) => {
     const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const image = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
     const response = await client.responses.create({
-      model: process.env.OPENAI_MODEL || "gpt-5.4-mini",
+      model,
       input: [{
         role: "user",
         content: [
-          { type: "input_text", text: "Identify this wine from the visible label. Return only valid JSON. Never invent an exact vintage, score, price or review count if it is not visible or reliably inferable. Use null or an honest range. Include: name, producer, vintage, wine_type, country, region, grapes (array), alcohol, style, tasting_notes (array), food_pairings (array), serving_temperature, drinking_window, typical_price_gbp, critic_rating_summary, confidence (high/medium/low), caveat." },
+          { type: "input_text", text: "Read the front label carefully before identifying the wine. First transcribe the producer, cuvee/wine name, vintage or NV, classification/style, and place exactly as printed. Use those words together to identify the bottle; do not identify objects or bottles in the background. For this task, NV means non-vintage and is valid label evidence. Never invent an exact vintage, score, price or review count. Use null or an honest range for details that are not visible or reliably known." },
           { type: "input_image", image_url: image, detail: "high" }
         ]
       }],
-      text: { format: { type: "json_object" } }
+      text: {
+        format: {
+          type: "json_schema",
+          name: "wine_identification",
+          strict: true,
+          schema: {
+            type: "object",
+            properties: {
+              name: { type: ["string", "null"] }, producer: { type: ["string", "null"] },
+              vintage: { type: ["string", "null"] }, wine_type: { type: ["string", "null"] },
+              country: { type: ["string", "null"] }, region: { type: ["string", "null"] },
+              grapes: { type: "array", items: { type: "string" } }, alcohol: { type: ["string", "null"] },
+              style: { type: ["string", "null"] }, tasting_notes: { type: "array", items: { type: "string" } },
+              food_pairings: { type: "array", items: { type: "string" } }, serving_temperature: { type: ["string", "null"] },
+              drinking_window: { type: ["string", "null"] }, typical_price_gbp: { type: ["string", "null"] },
+              critic_rating_summary: { type: ["string", "null"] }, confidence: { type: "string", enum: ["high", "medium", "low"] },
+              caveat: { type: ["string", "null"] }
+            },
+            required: ["name", "producer", "vintage", "wine_type", "country", "region", "grapes", "alcohol", "style", "tasting_notes", "food_pairings", "serving_temperature", "drinking_window", "typical_price_gbp", "critic_rating_summary", "confidence", "caveat"],
+            additionalProperties: false
+          }
+        }
+      },
+      max_output_tokens: 1400
     });
+    if (!response.output_text) throw new Error("OpenAI returned no wine identification text.");
     const result = JSON.parse(response.output_text);
     res.json(result);
   } catch (error) {
-    console.error(error);
-    res.status(502).json({ error: "I couldn't identify that bottle. Try a closer, brighter label photo." });
+    console.error("Wine identification failed", { model, status: error?.status, code: error?.code, message: error?.message });
+    const configurationError = error?.status === 401 || error?.status === 403 || error?.status === 404 || error?.code === "model_not_found";
+    res.status(502).json({ error: configurationError ? "WineSnap's AI connection needs checking. Please try again shortly." : "I couldn't identify that bottle. Try a closer, brighter label photo." });
   }
 });
 
